@@ -1,0 +1,28 @@
+ad <- function (x, vars, wt) 
+{
+    model <- list()
+    model$predictors <- vars
+    model$targets <- character(0)
+    model$weights <- wt
+    for (var in vars) {
+        if (class(x[, var]) == "numeric") {
+            new.var <- paste0(var, "_Q4")
+            x <- cbind(x, calc.quartile(x[, var]))
+            colnames(x)[ncol(x)] <- new.var
+            model$targets <- append(model$targets, new.var)
+        }
+        else {
+            model$targets <- append(model$targets, var)
+        }
+    }
+    model$predictive.models <- list()
+    for (var in 1:length(vars)) {
+        formula <- as.formula(paste0(model$targets[var], "~", 
+            paste(model$predictors[-var], collapse = "+")))
+        pred.model <- randomForest(formula = formula, data = x, 
+            ntree = 100)
+        model$predictive.models[[var]] <- pred.model
+    }
+    class(model) <- "ad.model"
+    model
+}
